@@ -108,6 +108,7 @@ namespace NaturalSort {
 
 
 # Filters files in the script's directory by filetype in script filename.
+Invoke-Retry -ScriptBlock {
 Get-ChildItem -File -Filter *$fileType |
     Group-Object { $_.Name -replace ($refolderDelim + '.*') } |
         ForEach-Object -Parallel {
@@ -122,8 +123,9 @@ Get-ChildItem -File -Filter *$fileType |
                 $dir = $_.Name
             }
 # Filenames are moved to the repective folder
-            $_.Group | Move-Item -Destination $dir
+            $_.Group |  Move-Item -Destination $dir
         } -ThrottleLimit $threads
+        } -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
 
 
 #First Rename Script
@@ -135,6 +137,8 @@ $zeropad = '00000000000000000000000000000000000000000000000000000'
 #Used to avoid rename of file that already exists, also keeps files in order incase script fails mid way
 $startrename = '--00--'
 
+
+Invoke-Retry -ScriptBlock {
 $tifs | ForEach {
 
 $fileName = Split-Path $_.Basename -leaf
@@ -147,7 +151,7 @@ $parentNameQuotes = '"' + $parentName + '"'
         $pad = ($zeropad + $i)
         $number = $pad.ToString().Substring($pad.ToString().Length -$padding)
         $fileNameCut = ($startrename + $parentName + $renameseperator + $number + $fileType -f $i)
-        Invoke-Retry -ScriptBlock {Rename-Item $renamedFile -NewName $fileNameCut} -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
+        Rename-Item $renamedFile -NewName $fileNameCut
         $lastFile = $parentNameQuotes
     }
 #Elseif on all following files in the folder
@@ -156,13 +160,13 @@ $parentNameQuotes = '"' + $parentName + '"'
         $pad = ($zeropad + $i)
         $number = $pad.ToString().Substring($pad.ToString().Length -$padding)
         $fileNameCut = ($startrename + $parentName + $renameseperator + $number + $fileType -f $i)
-        Invoke-Retry -ScriptBlock {Rename-Item $renamedFile -NewName $fileNameCut} -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
+        Rename-Item $renamedFile -NewName $fileNameCut
         $lastFile = $parentNameQuotes
-    }
+    } 
 #increment by 1 for next file rename
 $i=$i + 1
-
 }
+} -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
 
 
 #Second Rename Script
@@ -171,14 +175,15 @@ Sort-Naturally -Array $dectifs
 #Reverse Array to garnetee the files don't get sorted wrong if the script fails mid way
 [array]::Reverse($dectifs)
 
+Invoke-Retry -ScriptBlock {
 $dectifs | ForEach {
 $renamedFile = $_
 $fileName = Split-Path $_.Basename -leaf
 $fileNameCut = $fileName -replace ($startrename)
 #removes the --00-- from the file name
-Invoke-Retry -ScriptBlock {Rename-Item $renamedFile -NewName ($fileNameCut + $fileType)} -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
-
+Rename-Item $renamedFile -NewName ($fileNameCut + $fileType)
 }
+} -TimeoutInSecs 5 -RetryCount 4 -FailureFile ('Problem File: ' + $renamedFile) -Verbose
 
 }
 
