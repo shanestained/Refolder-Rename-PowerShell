@@ -3,6 +3,8 @@ $refolderdelim = '_'
 #Set the character that seperates the paerent prefix and the number suffix during rename
 $renameseperator = '_'
 
+# Set Threads
+$threads = 6
 
 #Get .ps1 filename
 $scriptPath = $MyInvocation.MyCommand.Path
@@ -105,18 +107,23 @@ namespace NaturalSort {
 }
 
 
-#Refolder Script
+# Filters files in the script's directory by filetype in script filename.
 Get-ChildItem -File -Filter *$fileType |
-  Group-Object { $_.Name -replace ($refolderdelim + '.*') } |
-  ForEach-Object {
-    if (-Not (Test-Path -Path $_.Name)) {
-    $dir = New-Item -Type Directory -Name $_.Name
-    }
-    else {
-    $dir = $_.Name
-    }
-    $_.Group | Move-Item -Destination $dir
-  }
+    Group-Object { $_.Name -replace ($refolderDelim + '.*') } |
+        ForEach-Object -Parallel {
+        
+# Checks if folder exists and creates it if not
+            if ( -Not ( Test-Path -Path $_.Name ) ) {
+                $dir = New-Item -Type Directory -Name $_.Name
+            }
+            
+# If folder does exist it only sets the $dir variable
+            else {
+                $dir = $_.Name
+            }
+# Filenames are moved to the repective folder
+            $_.Group | Move-Item -Destination $dir
+        } -ThrottleLimit $threads
 
 
 #First Rename Script
