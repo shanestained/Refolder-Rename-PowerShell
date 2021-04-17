@@ -16,6 +16,7 @@ Any part of the filename before the two periods is okay to change.
     00-Refolder.jpg.ps1
     
 To change ranaming number padding change the number after the underscore in the ps1 filename.
+Any part of the filename before the underscore is okay to change.
 
     00-Refolder-Rename-Parent-Folder_4.tif.ps1
     00-Refolder-Rename-Parent-Folder_7.txt.ps1
