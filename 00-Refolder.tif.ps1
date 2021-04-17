@@ -27,13 +27,13 @@ Get-ChildItem -File -Filter *$fileType |
             else {
                 $dir = $_.Name
             }
-# Filenames are moved to the repective folder
+# Filenames are moved to their respective folder
             $_.Group | Move-Item -Destination $dir
         } -ThrottleLimit $threads
 }
 
 Write-Output 'REFOLDER FINISHED: Ready for Next Step'
 
-# Remove lines below if you want powershell to close automatically after running.
+# Remove lines below if you want Powershell to close automatically after running.
 Read-Host -Prompt "Press Enter to exit"
 exit
